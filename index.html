@@ -1,0 +1,129 @@
+<!--
+非營業用
+每月用電度數分段 夏月(6月1日至9月30日) / 非夏月(夏月以外時間)
+用戶因 2 個月抄表、收費一次，計費時各段度數係加倍計算
+
+0~120度以下部分每度 1.68 元 / 1.68 元
+121~330度以下部分每度 2.45 元 / 2.16 元
+331~500度以下部分每度 3.7 元 / 3.03 元
+501~700度以下部分每度 5.04 元 / 4.14 元
+701~1000度以下部分每度 6.24 元 / 5.07 元
+1001~999999999度以下部分每度 8.46 元 / 6.63 元
+
+營業用
+每月用電度數分段 夏月(6月1日至9月30日) / 非夏月(夏月以外時間)
+用戶因 2 個月抄表、收費一次，計費時各段度數係加倍計算
+
+0~330度以下部分每度 2.61 元 / 2.18 元
+331~700度以下部分每度 3.66 元 / 3 元
+701~1500度以下部分每度 4.46 元 / 3.61 元
+1501~3000度以下部分每度 7.08 元 / 5.565 元
+3001~999999999度以下部分每度 7.43 元 / 5.83 元
+
+-->
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用電度數回推計算機</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .result {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>用電度數回推計算機</h1>
+    <p>※使用資料為<a href="https://www.taipower.com.tw/2289/2290/46940/46945/" target="_blank">113 年電價表燈電價表</a>
+      <br>※用戶因 2 個月抄表、收費一次，計費時各段度數係加倍計算
+      <br>※請輸入流動電價，不含公設費等調整項目
+      <br>※計算結果僅供參考，實際度數以電費單為準
+    </p>
+    <form id="calcForm">
+      <label for="usageType">用電類型:</label>
+      <select id="usageType">
+        <option value="nonBusiness">非營業用</option>
+        <option value="business">營業用</option>
+      </select>
+      <br><br>
+      <label for="season">季節:</label>
+      <select id="season">
+        <option value="summer">夏月</option>
+        <option value="nonSummer">非夏月</option>
+      </select>
+      <br><br>
+      <label for="totalBill">電費總額 (元):</label>
+      <input type="number" id="totalBill" required>
+      <br><br>
+      <button type="button" onclick="calculateUsage()">計算</button>
+    </form>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const rates = {
+      nonBusiness: {
+        summer: [1.68, 2.45, 3.7, 5.04, 6.24, 8.46],
+        nonSummer: [1.68, 2.16, 3.03, 4.14, 5.07, 6.63],
+        thresholds: [120, 330, 500, 700, 1000]
+      },
+      business: {
+        summer: [2.61, 3.66, 4.46, 7.08, 7.43],
+        nonSummer: [2.18, 3, 3.61, 5.565, 5.83],
+        thresholds: [330, 700, 1500, 3000]
+      }
+    };
+
+    function calculateUsage() {
+      const usageType = document.getElementById('usageType').value;
+      const season = document.getElementById('season').value;
+      const totalBill = parseFloat(document.getElementById('totalBill').value);
+      const rateInfo = rates[usageType][season];
+      const thresholds = rates[usageType].thresholds;
+
+      let remainingBill = totalBill;
+      let usage = [];
+      let totalUsage = 0;
+      let resultText = '';
+      let i = 0;
+      while (remainingBill > 0) {
+        let rate = rateInfo[i];
+        let threshold = thresholds[i] || 0;
+        if(i>0){
+          threshold = thresholds[i] - thresholds[i-1];
+        }
+        if(remainingBill <= 0) {
+          break;
+        }else{
+          if(remainingBill >= rate * (threshold) * 2){
+            usage[i] = threshold * 2;
+            remainingBill -= rate * (threshold) * 2;
+          }else {
+            usage[i] = remainingBill / rate;
+            remainingBill = 0;
+          }
+        }
+        
+        totalUsage = totalUsage + usage[i];
+        console.log(remainingBill,threshold,usage[i],totalUsage);
+        resultText = `第 ${i + 1} 級距: ${usage[i].toFixed(2)} 度 (每度 ${rate} 元)<br>` + resultText;
+        if(i<thresholds.length) i++;
+      }
+
+      resultText = `總用電量: ${totalUsage.toFixed(2)} 度<br>` + resultText;
+      document.getElementById('result').innerHTML = resultText;
+    }
+  </script>
+</body>
+</html>
